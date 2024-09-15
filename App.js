@@ -1,19 +1,29 @@
-import React, { useState } from 'react';
-import {SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { SafeAreaView, StatusBar, StyleSheet, Text, TextInput, TouchableOpacity, View, Dimensions } from 'react-native';
 
 const App = () => {
-
-  // Making Variables and their setters
   const [input, setInput] = useState('');
   const [result, setResult] = useState('');
   const [memory, setMemory] = useState(0);
   const [useAns, setUseAns] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(Dimensions.get('window').width > Dimensions.get('window').height);
 
-  // Function to handle button press
+  const handleOrientationChange = ({ window }) => {
+    setIsLandscape(window.width > window.height);
+  };
+
+  useEffect(() => {
+    const subscription = Dimensions.addEventListener('change', handleOrientationChange);
+    return () => {
+      subscription?.remove();
+    };
+  }, []);
+
   const onButtonPress = (button) => {
     switch (button) {
       case '=':
-        calculateResult();
+        setUseAns(true);
+        setInput('');
         break;
       case 'AC':
         clearInput();
@@ -43,20 +53,20 @@ const App = () => {
         recallMemory();
         break;
       default:
-        setInput(input + button);
+        setInput(prevInput => prevInput + button);
     }
   };
 
-  const calculateResult = () => {
+  useEffect(() => {
     try {
-      const evalResult = eval(input); // Evaluates the string of inputs and which operation is being used
-      setResult(evalResult);          // Calls setter for result text to be displayed
-      setInput('');                   // Resets the input text to 'empty' and just displays result
-      setUseAns(true);                // To handle ANS operation
+      if (input) {
+        const evalResult = eval(input);
+        setResult(evalResult.toString());
+      }
     } catch (error) {
-      setResult('Error');             // Calls setter for result text to display "Error"
+      setResult('Error');
     }
-  };
+  }, [input]);
 
   const clearInput = () => {
     setInput('');
@@ -64,129 +74,195 @@ const App = () => {
   };
 
   const backspace = () => {
-    setInput(input.slice(0, -1));     // Erases string value of input from right to left
+    setInput(prevInput => prevInput.slice(0, -1));
   };
 
   const handleExp = () => {
-    setInput(input + 'e');
+    setInput(prevInput => prevInput + 'e');
   };
 
   const toggleSign = () => {
-    if (input.startsWith('-')) {      // If input is negative
-      setInput(input.slice(1));         // Erases negative sign
-    } else {
-      setInput('-' + input);         // Else adds a '-' char in front of input
-    }
+    setInput(prevInput => prevInput.startsWith('-') ? prevInput.slice(1) : '-' + prevInput);
   };
 
   const roundResult = () => {
     if (result) {
-      const roundedResult = Math.round(result);  // Rounds off result to whole number
-      setResult(roundedResult);
+      const roundedResult = Math.round(parseFloat(result));
+      setResult(roundedResult.toString());
     }
   };
 
   const usePreviousResult = () => {
-    if (useAns && result !== '') {            // If value of ANS and result DOES NOT equal to 'empty'
-      setInput(input + result.toString());    // Sets input and adds "ANS" with value of previous result
+    if (useAns && result !== '') {
+      setInput(prevInput => prevInput + result);
     }
   };
 
   const addToMemory = () => {
     if (result) {
-      setMemory(memory + parseFloat(result));
+      setMemory(prevMemory => prevMemory + parseFloat(result));
     }
   };
 
   const subtractFromMemory = () => {
     if (result) {
-      setMemory(memory - parseFloat(result));
+      setMemory(prevMemory => prevMemory - parseFloat(result));
     }
   };
 
   const recallMemory = () => {
-    setInput(input + memory.toString());
+    setInput(prevInput => prevInput + memory.toString());
   };
 
-  return (
-    <SafeAreaView style = {styles.container}>
-      <StatusBar style = "auto"/>
+  const rows = [
+    ['7', '8', '9', '+', 'Back'],
+    ['4', '5', '6', '-', 'Ans'],
+    ['1', '2', '3', '*', 'M+'],
+    ['0', '.', 'EXP', '/', 'M-'],
+    ['±', 'RND', 'AC', '=', 'MR']
+  ];
 
-        <View style = {styles.solutionContainer}>
-          <Text style = {styles.solutionText}>{result}</Text>
-        </View>
-        <View style = {styles.inputContainer}>
-          <TextInput 
-            style = {styles.inputText} 
-            value = {input} 
-            onChangeText={setInput} 
-            keyboardType='numeric'
-          />
-        </View>
-        <View style = {styles.buttonContainer}>
-            {['7', '8', '9', '+', 'Back', '4', '5', '6', '-', 'Ans', '1', '2', '3', '*', 'M+', '0', '.', 'EXP', '/', 'M-', '±', 'RND', 'AC', '=', 'MR'].map(
-              (item, index) =>(
-                <TouchableOpacity 
-                  key = {index} 
-                  style = {styles.button}
-                  onPress={()=> onButtonPress(item)}
-                >
-                    <Text style = {styles.buttonText}>{item}</Text>
-                  </TouchableOpacity>
-              )
-            )}
+  return (
+    <SafeAreaView style={styles.container}>
+      <StatusBar style="auto" />
+      {isLandscape ? (
+        <View style={styles.landscapeContainer}>
+          <View style={styles.displayContainerLandscape}>
+            <TextInput 
+              style={styles.inputText} 
+              value={input} 
+              onChangeText={setInput} 
+              keyboardType='numeric'
+            />
+            <Text style={styles.solutionText}>{result}</Text>
           </View>
+          <View style={styles.buttonContainerLandscape}>
+            {rows.map((row, rowIndex) => (
+              <View key={rowIndex} style={styles.buttonRow}>
+                {row.map((item, index) => (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={[styles.button, item.match(/[0-9]/) ? styles.numberButton : null]} 
+                    onPress={() => onButtonPress(item)}
+                  >
+                    <Text style={styles.buttonText}>{item}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : (
+        <View style={styles.portraitContainer}>
+          <View style={styles.displayContainer}>
+            <TextInput 
+              style={styles.inputText} 
+              value={input} 
+              onChangeText={setInput} 
+              keyboardType='numeric'
+            />
+            <Text style={styles.solutionText}>{result}</Text>
+          </View>
+          <View style={styles.buttonContainer}>
+            {rows.map((row, rowIndex) => (
+              <View key={rowIndex} style={styles.buttonRow}>
+                {row.map((item, index) => (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={[styles.button, item.match(/[0-9]/) ? styles.numberButton : null]} 
+                    onPress={() => onButtonPress(item)}
+                  >
+                    <Text style={styles.buttonText}>{item}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ))}
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container:{  //Entire screen container
-    flex:1,
+  container: {
+    flex: 1,
   },
 
-  solutionContainer: { //Container for the result 
-    flex:1,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-  }, 
+  portraitContainer: {
+    flex: 1,
+    flexDirection: 'column',
+  },
 
-  solutionText: { //Styling for result text
-    fontSize: 40
-  }, 
-
-  inputContainer: { //Container for inputs
-    flex:9,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    background: 'green',
-  }, 
-
-  inputText: { //Styling for input text
-    fontSize: 30,
-  }, 
-
-  buttonContainer: { //Number and operations button container
-    flex: 7,
+  landscapeContainer: {
+    flex: 1,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-  }, 
+  },
 
-  button: { //Button size and styling
-    fontSize: 20,
-    width: "20%", //this adjusts columns
-    height: "20%",
+  displayContainer: {
+    flex: 2,
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
+    padding: 10,
+  },
+
+  displayContainerLandscape: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    padding: 10,
+  },
+
+  inputText: {
+    fontSize: 30,
+    color: '#c7c7c7',
+    width: '100%',
+    textAlign: 'right',
+  },
+
+  solutionText: {
+    fontSize: 65,
+    color: '#000',
+    textAlign: 'right',
+  },
+
+  buttonContainer: {
+    flex: 3,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    justifyContent: 'flex-end',
+  },
+
+  buttonContainerLandscape: {
+    flex: 2,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    justifyContent: 'flex-end',
+  },
+
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+
+  button: {
+    fontSize: 18,
+    width: '18%',
+    height: 60,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: "#ccc",
-  }, 
+    borderRadius: 15,
+    backgroundColor: '#70FFC6',
+  },
 
-  buttonText: { // Number and operations button text styling
-    fontSize: 24,
+  numberButton: {
+    backgroundColor: '#e6e6e6',
+  },
+
+  buttonText: {
+    fontSize: 16,
   }
-
-
-})
+});
 
 export default App;
