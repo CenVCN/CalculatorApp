@@ -159,6 +159,7 @@ const styles = StyleSheet.create({
     flex:9,
     justifyContent: 'center',
     alignItems: 'flex-end',
+    background: 'green',
   }, 
 
   inputText: { //Styling for input text
@@ -172,7 +173,7 @@ const styles = StyleSheet.create({
   }, 
 
   button: { //Button size and styling
-    fontSize: 24,
+    fontSize: 20,
     width: "20%", //this adjusts columns
     height: "20%",
     justifyContent: 'center',
