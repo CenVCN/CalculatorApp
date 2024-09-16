@@ -20,13 +20,16 @@ const App = () => {
   }, []);
 
   const onButtonPress = (button) => {
+    // Check if the button pressed is a number by converting it to a number and checking if it's valid
+    const isNumber = !isNaN(button);
+  
     switch (button) {
       case '=':
         try {
-          const evalResult = eval(input);               // Evaluate the input and update result when "=" is pressed
+          const evalResult = eval(input);
           setResult(evalResult.toString());
           setUseAns(true);
-          setInput('');                                 // Clear input after evaluation
+          setInput('');
         } catch (error) {
           setResult('Error');
         }
@@ -59,10 +62,18 @@ const App = () => {
         recallMemory();
         break;
       default:
-        if (useAns && result !== '') {                // When pressing an operator after '=', append the previous result
-          setInput(result + button);
+        // If previous result exists and a number is pressed, clear input and reset it
+        if (useAns && result !== '' && isNumber) {
+          setInput(button); // Resets input field
           setUseAns(false);
-        } else {
+        }
+        // If previous result exists and an operator is pressed, continue calculation
+        else if (useAns && result !== '' && !isNumber) {
+          setInput(result + button); // Append result to new operator
+          setUseAns(false);
+        } 
+        // Else, just append the button press to the current input
+        else {
           setInput(prevInput => prevInput + button);
         }
     }
