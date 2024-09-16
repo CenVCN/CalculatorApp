@@ -22,8 +22,14 @@ const App = () => {
   const onButtonPress = (button) => {
     switch (button) {
       case '=':
-        setUseAns(true);
-        setInput('');
+        try {
+          const evalResult = eval(input);               // Evaluate the input and update result when "=" is pressed
+          setResult(evalResult.toString());
+          setUseAns(true);
+          setInput('');                                 // Clear input after evaluation
+        } catch (error) {
+          setResult('Error');
+        }
         break;
       case 'AC':
         clearInput();
@@ -53,20 +59,14 @@ const App = () => {
         recallMemory();
         break;
       default:
-        setInput(prevInput => prevInput + button);
+        if (useAns && result !== '') {                // When pressing an operator after '=', append the previous result
+          setInput(result + button);
+          setUseAns(false);
+        } else {
+          setInput(prevInput => prevInput + button);
+        }
     }
   };
-
-  useEffect(() => {
-    try {
-      if (input) {
-        const evalResult = eval(input);
-        setResult(evalResult.toString());
-      }
-    } catch (error) {
-      setResult('Error');
-    }
-  }, [input]);
 
   const clearInput = () => {
     setInput('');
@@ -118,7 +118,7 @@ const App = () => {
     ['7', '8', '9', '+', 'Back'],
     ['4', '5', '6', '-', 'Ans'],
     ['1', '2', '3', '*', 'M+'],
-    ['0', '.', 'EXP', '/', 'M-'],
+    ['0', '.', 'EXP', '/', 'M-'], 
     ['±', 'RND', 'AC', '=', 'MR']
   ];
 
